@@ -17,17 +17,20 @@ const finalCalculations = (() => {
   const searchBarEl = document.getElementById('finalSearchBar');
   const searchPercentEl = document.getElementById('finalSearchPercent');
   const searchBestEl = document.getElementById('finalSearchBest');
+  const searchSentinel = document.getElementById('finalSearchSentinel');
   const battleLogEl = document.getElementById('finalBattleLog');
   const battleOursRows = document.getElementById('finalBattleOursRows');
   const battleEnemyRows = document.getElementById('finalBattleEnemyRows');
   const battleOursMeta = document.getElementById('finalBattleOursMeta');
   const battleEnemyMeta = document.getElementById('finalBattleEnemyMeta');
+  const betaEl = document.getElementById('finalCalculationsBeta');
 
   if (!section || !modeEl || !rowsEl || !emptyEl || !tableWrap || !summaryEl ||
       !inlineEl || !inlineWrap || !inlineLayoutToggle || !minimalToggle ||
       !enemyOrderEl || !enemyOrderRowsEl || !searchProgressEl || !searchBarEl ||
       !searchPercentEl || !searchBestEl || !battleLogEl || !battleOursRows ||
-      !battleEnemyRows || !battleOursMeta || !battleEnemyMeta) return null;
+      !battleEnemyRows || !battleOursMeta || !battleEnemyMeta || !betaEl ||
+      !searchSentinel) return null;
 
   const RESULT_VIEW_KEY = 'finalResultView';
   const INFINITE_ENEMY_QUANTITY = 1e15;
@@ -35,6 +38,8 @@ const finalCalculations = (() => {
   let hasEnemyOrder = false;
   let inlineColumn = false;
   let renderToken = 0;
+  let searchActive = false;
+  let searchSentinelVisible = true;
 
   const cards = {
     leadership: section.querySelector('[data-capacity="leadership"]'),
@@ -62,6 +67,8 @@ const finalCalculations = (() => {
     dragons: 'type.dragon',
     giants: 'type.giant',
     elementals: 'type.elemental',
+    elves: 'type.elves',
+    runic: 'type.runic',
     fortifications: 'enemy.fortifications',
     epicMonsters: 'enemy.epicMonsters'
   };
@@ -111,6 +118,13 @@ const finalCalculations = (() => {
     }
   }
 
+  function formatRatio(damage, losses) {
+    const dealt = Number(damage);
+    const spent = Number(losses);
+    if (!(spent > 0)) return dealt > 0 ? '∞' : '0';
+    return formatDecimal(dealt / spent);
+  }
+
   function formatPercent(value) {
     return `${formatDecimal(value)}%`;
   }
@@ -152,12 +166,40 @@ const finalCalculations = (() => {
     }
   }
 
+  function updateSearchFloating() {
+    searchProgressEl.classList.toggle('is-floating',
+      searchActive && !searchSentinelVisible);
+  }
+
   function setSearchVisible(visible) {
+    searchActive = visible;
     searchProgressEl.hidden = !visible;
-    if (!visible) return;
+    if (!visible) {
+      updateSearchFloating();
+      return;
+    }
     searchBarEl.style.width = '0%';
     searchPercentEl.textContent = '0%';
     searchBestEl.textContent = '';
+    updateSearchFloating();
+  }
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      searchSentinelVisible = entries[0] ? entries[0].isIntersecting : true;
+      updateSearchFloating();
+    }, { rootMargin: '0px 0px -140px 0px' });
+    observer.observe(searchSentinel);
+  } else {
+    const updateSentinel = () => {
+      const rect = searchSentinel.getBoundingClientRect();
+      searchSentinelVisible = rect.top >= 0 &&
+        rect.bottom <= window.innerHeight - 140;
+      updateSearchFloating();
+    };
+    window.addEventListener('scroll', updateSentinel, { passive: true });
+    window.addEventListener('resize', updateSentinel);
+    updateSentinel();
   }
 
   function updateSearchProgress(progress) {
@@ -341,11 +383,11 @@ const finalCalculations = (() => {
     const targetPool = fortificationTargets.length ? fortificationTargets : branches;
     const target = targetPool.reduce((best, branch) => {
       if (!best) return branch;
+      const damageDiff = branch.damage - best.damage;
+      if (Math.abs(damageDiff) > 1e-9) return damageDiff > 0 ? branch : best;
       if (branch.totalHealth !== best.totalHealth) {
         return branch.totalHealth > best.totalHealth ? branch : best;
       }
-      const damageDiff = branch.damage - best.damage;
-      if (Math.abs(damageDiff) > 1e-9) return damageDiff > 0 ? branch : best;
       return best;
     }, null);
     const seenTypes = new Map();
@@ -569,6 +611,7 @@ const finalCalculations = (() => {
   }
 
   function setMode(mode) {
+    betaEl.hidden = mode !== 'doctorStrange';
     const key = modeLabels[mode];
     if (!key) {
       delete modeEl.dataset.i18n;
@@ -687,9 +730,12 @@ const finalCalculations = (() => {
       meta.textContent = scenario.victory
         ? I18N.t('calc.victorySummary', {
           rounds: formatInt(scenario.rounds),
-          value: formatInt(scenario.losses)
+          value: formatInt(scenario.losses),
+          efficiency: formatRatio(scenario.damageDealt, scenario.losses)
         })
-        : I18N.t('calc.noVictorySummary');
+        : I18N.t('calc.noVictorySummary', {
+          efficiency: formatRatio(scenario.damageDealt, scenario.losses)
+        });
     };
 
     battleLogEl.hidden = false;
@@ -731,9 +777,12 @@ const finalCalculations = (() => {
       summaryEl.textContent = plan.victory
         ? I18N.t('calc.victorySummary', {
           rounds: formatInt(plan.rounds),
-          value: formatInt(plan.losses)
+          value: formatInt(plan.losses),
+          efficiency: formatRatio(plan.damageDealt, plan.losses)
         })
-        : I18N.t('calc.noVictorySummary');
+        : I18N.t('calc.noVictorySummary', {
+          efficiency: formatRatio(plan.damageDealt, plan.losses)
+        });
       summaryEl.classList.toggle('is-warning', !plan.victory);
     } else {
       summaryEl.textContent = I18N.t('calc.resultSummary', {

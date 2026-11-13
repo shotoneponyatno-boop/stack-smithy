@@ -5,6 +5,28 @@ const strangeMode = (() => {
   const SEARCH_STEP_DELAY_MS = 40;
   const MIN_UNIT_COUNT = 100;
   const categoryOrder = ['leadership', 'authority', 'dominance'];
+  const DRAGON_COIN_SILVER = 1000;
+  const GOLD_SILVER = 1000;
+
+  function unitReplacementValue(unit) {
+    const training = (unit && unit.trainingCost) || {};
+    const silver = Math.max(0, Number(training.silver) || 0);
+    const dragonCoins = Math.max(0, Number(training.dragonCoins) || 0);
+    if (silver > 0 || dragonCoins > 0) {
+      return silver + dragonCoins * DRAGON_COIN_SILVER;
+    }
+    const revival = (unit && unit.revivalCost) || {};
+    const goldValue = Math.max(0, Number(revival.gold) || 0) * GOLD_SILVER;
+    if (goldValue > 0) return goldValue;
+    const capacity = Math.max(0,
+      Number(unit && unit.authorityCost) || Number(unit && unit.dominanceCost) || 0);
+    return capacity * GOLD_SILVER;
+  }
+
+  function damagePerSilver(damage, losses) {
+    if (!(losses > 0)) return damage > 0 ? Infinity : 0;
+    return damage / losses;
+  }
 
   function enemyQuantity(enemy) {
     const quantity = Number(enemy.quantity);
@@ -137,17 +159,25 @@ const strangeMode = (() => {
           ])),
           siege: Number(row.unit.fortificationStrengthMultiplier) > 1,
           tags: ourUnitTags(row),
-          trainingValue: Math.max(0, Number(
-            row.unit.trainingCost && row.unit.trainingCost.silver
-          ) || 0)
+          replacementValue: unitReplacementValue(row.unit),
+          healthLost: 0,
+          damageDealt: 0,
+          attacks: 0,
+          maxShortfall: 0
         };
       });
     const logs = [];
 
     if (!enemyState.some((enemy) => enemy.health > 0 && enemy.healthPerUnit > 0)) {
-      return { victory: ourState.length > 0, losses: 0, rounds: 0, logs };
+      return {
+        victory: ourState.length > 0, losses: 0, damageDealt: 0, rounds: 0, logs, units: []
+      };
     }
-    if (!ourState.length) return { victory: false, losses: 0, rounds: 0, logs };
+    if (!ourState.length) {
+      return {
+        victory: false, losses: 0, damageDealt: 0, rounds: 0, logs, units: []
+      };
+    }
 
     function aliveEnemies() {
       return enemyState.filter((enemy) => enemy.health > 0 && enemy.healthPerUnit > 0);
@@ -170,7 +200,8 @@ const strangeMode = (() => {
 
         const value = unit.damageByEnemy.get(target.index) || 0;
         if (value <= 0) return;
-        const damage = unit.count * value;
+        const damage = Math.min(unit.count * value, target.health);
+        unit.damageDealt += damage;
         const before = target.count;
         target.health = Math.max(0, target.health - damage);
         target.count = target.health > 0
@@ -226,6 +257,7 @@ const strangeMode = (() => {
 
     function ourUnitAttack(unit, turn) {
       if (unit.health <= 0) return;
+      unit.attacks += 1;
       let target = null;
       let pool = enemyState;
       if (unit.siege) {
@@ -238,14 +270,23 @@ const strangeMode = (() => {
       pool.forEach((enemy) => {
         if (enemy.health <= 0 || enemy.healthPerUnit <= 0) return;
         const value = unit.damageByEnemy.get(enemy.index) || 0;
-        if (!target || enemy.health > target.enemy.health + 1e-9 ||
-            (Math.abs(enemy.health - target.enemy.health) <= 1e-9 && value > target.value)) {
-          target = { enemy, value };
+        if (value <= 0) return;
+        const raw = unit.count * value;
+        const effective = Math.min(raw, enemy.health);
+        if (!target || effective > target.effective + 1e-9 ||
+            (Math.abs(effective - target.effective) <= 1e-9 &&
+             raw > target.raw + 1e-9)) {
+          target = { enemy, value, raw, effective };
         }
       });
       if (!target || target.value <= 0) return;
 
-      const damage = unit.count * target.value;
+      const needed = Math.max(1, Math.ceil(target.enemy.health / target.value));
+      const shortfall = Math.max(0, needed - unit.count);
+      if (shortfall > unit.maxShortfall) unit.maxShortfall = shortfall;
+
+      const damage = target.effective;
+      unit.damageDealt += damage;
       const before = target.enemy.count;
       target.enemy.health = Math.max(0, target.enemy.health - damage);
       target.enemy.count = target.enemy.health > 0 && target.enemy.healthPerUnit > 0
@@ -269,19 +310,25 @@ const strangeMode = (() => {
       ourState.forEach((unit) => {
         if (unit.health <= 0) return;
         const bonus = enemyBonusAgainst(enemy.enemy, unit.tags);
-        const potential = enemy.count * enemy.damagePerUnit *
+        const raw = enemy.count * enemy.damagePerUnit *
           Math.max(0, 1 + bonus / 100);
-        if (potential <= 0) return;
-        if (!target || potential > target.potential + 1e-9 ||
-            (Math.abs(potential - target.potential) <= 1e-9 &&
-             unit.health > target.unit.health)) {
-          target = { unit, potential };
+        if (raw <= 0) return;
+        const effective = Math.min(raw, unit.health);
+        if (!target || effective > target.effective + 1e-9 ||
+            (Math.abs(effective - target.effective) <= 1e-9 &&
+             (raw > target.raw + 1e-9 ||
+              (Math.abs(raw - target.raw) <= 1e-9 &&
+               unit.health > target.unit.health)))) {
+          target = { unit, raw, effective };
         }
       });
       if (!target) return;
 
       const before = target.unit.count;
-      target.unit.health = Math.max(0, target.unit.health - target.potential);
+      const beforeHealth = target.unit.health;
+      const damage = Math.min(target.raw, beforeHealth);
+      target.unit.health = Math.max(0, beforeHealth - damage);
+      target.unit.healthLost += damage;
       target.unit.count = target.unit.health > 0
         ? Math.ceil(target.unit.health / target.unit.healthPerUnit) : 0;
       if (collectLog) {
@@ -290,7 +337,7 @@ const strangeMode = (() => {
           side: 'enemy',
           attacker: enemy.name,
           target: target.unit.row.name,
-          damage: target.potential,
+          damage,
           killed: Math.max(0, before - target.unit.count),
           remaining: target.unit.count
         });
@@ -317,14 +364,27 @@ const strangeMode = (() => {
     }
 
     const rounds = Math.max(1, Math.ceil(turn / 2));
-    const losses = ourState.reduce((sum, unit) =>
-      sum + Math.max(0, unit.initialCount - unit.count) * unit.trainingValue, 0);
+    const losses = ourState.reduce((sum, unit) => {
+      if (!(unit.healthPerUnit > 0)) return sum;
+      return sum + (unit.healthLost / unit.healthPerUnit) * unit.replacementValue;
+    }, 0);
+    const damageDealt = ourState.reduce((sum, unit) => sum + unit.damageDealt, 0);
+    const units = ourState.map((unit) => ({
+      id: unit.row.unit && unit.row.unit.id,
+      name: unit.row.name,
+      initialCount: unit.initialCount,
+      remaining: unit.count,
+      attacks: unit.attacks,
+      shortfall: unit.maxShortfall
+    }));
 
     return {
       victory: enemiesDead() && !oursDead(),
       losses,
+      damageDealt,
       rounds,
-      logs
+      logs,
+      units
     };
   }
 
@@ -359,7 +419,7 @@ const strangeMode = (() => {
     return counts;
   }
 
-  function distributeCounts(rows, budgets, focusIndex, focusCount) {
+  function distributeCounts(rows, budgets, focusIndex, focusCount, fillOptional) {
     const counts = new Array(rows.length).fill(0);
     const categories = ['leadership', 'authority', 'dominance'];
 
@@ -369,14 +429,22 @@ const strangeMode = (() => {
         .filter((item) => item.row.category === category && item.row.cost > 0);
       if (!categoryItems.length) return;
 
+      const focusInCategory = focusIndex >= 0 && focusIndex < rows.length &&
+        rows[focusIndex].category === category;
+      if (!fillOptional && !focusInCategory &&
+          (category === 'authority' || category === 'dominance')) return;
+
       let remaining = Math.max(0, Number(budgets[category]) || 0);
 
-      if (focusIndex >= 0 && focusIndex < rows.length &&
-          rows[focusIndex].category === category) {
+      if (focusInCategory) {
         const maxFocus = Math.floor(remaining / rows[focusIndex].cost);
         const value = Math.max(0, Math.min(focusCount, maxFocus));
         counts[focusIndex] = value;
         remaining -= value * rows[focusIndex].cost;
+        if (!fillOptional &&
+            (category === 'authority' || category === 'dominance')) {
+          return;
+        }
       }
 
       const others = categoryItems.filter((item) => item.index !== focusIndex);
@@ -442,7 +510,6 @@ const strangeMode = (() => {
       .map((row, index) => ({ ...row, count: counts[index] || 0 }))
       .filter((row) => row.count > 0);
     if (siegeRow) trialRows.push({ ...siegeRow });
-    const oursFirst = simulate(trialRows, enemies, true);
     const enemyFirst = simulate(trialRows, enemies, false);
     const strongestOrdinary = trialRows
       .filter((row) => row.category === 'leadership')
@@ -452,19 +519,16 @@ const strangeMode = (() => {
       .reduce((sum, row) => sum + row.count * row.healthPerUnit *
         (1 + Math.max(0, Number(row.enemyBonusTotal) || 0) / 100), 0);
     const healthOk = otherHealth < strongestOrdinary;
-    const feasible = oursFirst.victory && enemyFirst.victory && healthOk;
-    const maxLoss = Math.max(oursFirst.losses, enemyFirst.losses);
-    const sumLoss = oursFirst.losses + enemyFirst.losses;
-    const wins = (oursFirst.victory ? 1 : 0) + (enemyFirst.victory ? 1 : 0);
+    const feasible = enemyFirst.victory && healthOk;
     return {
       counts: counts.slice(),
-      oursFirst,
       enemyFirst,
       feasible,
       healthOk,
-      wins,
-      maxLoss,
-      sumLoss
+      losses: enemyFirst.losses,
+      damageDealt: enemyFirst.damageDealt,
+      efficiency: damagePerSilver(enemyFirst.damageDealt, enemyFirst.losses),
+      rounds: enemyFirst.rounds
     };
   }
 
@@ -472,10 +536,108 @@ const strangeMode = (() => {
     if (!best) return true;
     if (candidate.feasible !== best.feasible) return candidate.feasible;
     if (candidate.healthOk !== best.healthOk) return candidate.healthOk;
-    if (candidate.wins !== best.wins) return candidate.wins > best.wins;
-    if (candidate.maxLoss !== best.maxLoss) return candidate.maxLoss < best.maxLoss;
-    if (candidate.sumLoss !== best.sumLoss) return candidate.sumLoss < best.sumLoss;
+    if (candidate.efficiency !== best.efficiency) {
+      return candidate.efficiency > best.efficiency;
+    }
+    if (candidate.damageDealt !== best.damageDealt) {
+      return candidate.damageDealt > best.damageDealt;
+    }
+    if (candidate.losses !== best.losses) return candidate.losses < best.losses;
+    if (candidate.rounds !== best.rounds) return candidate.rounds < best.rounds;
     return false;
+  }
+
+  function trimLeadershipCounts(rows, counts, enemies, siegeRow) {
+    const trimmed = counts.slice();
+    const feasible = (trial) => evaluate(trial, rows, enemies, siegeRow).feasible;
+
+    for (let pass = 0; pass < 3; pass += 1) {
+      let changed = false;
+      rows.forEach((row, index) => {
+        if (row.category !== 'leadership') return;
+        const original = trimmed[index];
+        if (!(original > 0)) return;
+
+        let low = 0;
+        let high = original;
+        while (low < high) {
+          const mid = Math.floor((low + high) / 2);
+          const trial = trimmed.slice();
+          trial[index] = mid;
+          if (feasible(trial)) high = mid;
+          else low = mid + 1;
+        }
+
+        if (low < original) {
+          const trial = trimmed.slice();
+          trial[index] = low;
+          if (feasible(trial)) {
+            trimmed[index] = low;
+            changed = true;
+          }
+        }
+      });
+      if (!changed) break;
+    }
+
+    return trimmed;
+  }
+
+  function reserveLeadershipCounts(rows, trimmed, original, enemies, siegeRow) {
+    const counts = trimmed.slice();
+    const indexById = new Map();
+    rows.forEach((row, index) => {
+      if (row.unit && row.unit.id) indexById.set(row.unit.id, index);
+    });
+
+    for (let pass = 0; pass < 4; pass += 1) {
+      const trialRows = rows
+        .map((row, index) => ({ ...row, count: counts[index] || 0 }))
+        .filter((row) => row.count > 0);
+      if (siegeRow) trialRows.push({ ...siegeRow });
+      const result = simulate(trialRows, enemies, false, false);
+      if (!Array.isArray(result.units)) break;
+
+      let changed = false;
+      result.units.forEach((unit) => {
+        if (!unit || !unit.id || !(unit.shortfall > 0)) return;
+        const index = indexById.get(unit.id);
+        if (index === undefined || rows[index].category !== 'leadership') return;
+        const cap = Number.isFinite(original[index]) ? original[index] : counts[index];
+        const next = Math.min(cap, counts[index] + Math.ceil(unit.shortfall));
+        if (next > counts[index]) {
+          counts[index] = next;
+          changed = true;
+        }
+      });
+      if (!changed) break;
+    }
+
+    return counts;
+  }
+
+  function addLeadershipBuffer(rows, counts, budgets) {
+    const buffered = counts.slice();
+    const leadership = rows
+      .map((row, index) => ({ row, index }))
+      .filter((item) => item.row.category === 'leadership' && item.row.cost > 0);
+    const spent = leadership.reduce((sum, item) =>
+      sum + Math.max(0, counts[item.index] || 0) * item.row.cost, 0);
+    let slack = Math.max(0, Number(budgets.leadership) || 0) - spent;
+    if (slack <= 0) return buffered;
+
+    leadership.forEach((item) => {
+      const count = Math.max(0, counts[item.index] || 0);
+      if (count <= 0) return;
+      const extra = Math.ceil(count * 0.05);
+      if (extra <= 0) return;
+      const allowed = Math.min(extra, Math.floor(slack / item.row.cost));
+      if (allowed <= 0) return;
+      buffered[item.index] = count + allowed;
+      slack -= allowed * item.row.cost;
+    });
+
+    return buffered;
   }
 
   function failPlan(settings, limits, rows, message) {
@@ -563,8 +725,8 @@ const strangeMode = (() => {
     let checked = 0;
     let best = null;
 
-    let coarseTotal = 1;
-    maxCounts.forEach((max) => { coarseTotal += Math.floor(max / 100) + 1; });
+    let coarseTotal = 2;
+    maxCounts.forEach((max) => { coarseTotal += 2 * (Math.floor(max / 100) + 1); });
 
     async function check(counts) {
       checked += 1;
@@ -574,7 +736,7 @@ const strangeMode = (() => {
         if (onProgress) {
           onProgress({
             percent: Math.min(79, checked / coarseTotal * 79),
-            bestLoss: best && best.feasible ? best.maxLoss : null
+            bestLoss: best && best.feasible ? best.losses : null
           });
         }
         await new Promise((resolve) => setTimeout(resolve, SEARCH_STEP_DELAY_MS));
@@ -583,14 +745,18 @@ const strangeMode = (() => {
       return true;
     }
 
-    const baseline = distributeCounts(searchRows, budgets, -1, 0);
+    const baseline = distributeCounts(searchRows, budgets, -1, 0, true);
     if (!(await check(baseline))) return null;
+    const protectedBaseline = distributeCounts(searchRows, budgets, -1, 0, false);
+    if (!(await check(protectedBaseline))) return null;
 
     for (let index = 0; index < searchRows.length; index += 1) {
       const max = maxCounts[index];
       for (let count = 0; count <= max; count += 100) {
-        const counts = distributeCounts(searchRows, budgets, index, count);
-        if (!(await check(counts))) return null;
+        const withOptional = distributeCounts(searchRows, budgets, index, count, true);
+        if (!(await check(withOptional))) return null;
+        const protectedCounts = distributeCounts(searchRows, budgets, index, count, false);
+        if (!(await check(protectedCounts))) return null;
       }
     }
 
@@ -603,37 +769,65 @@ const strangeMode = (() => {
       for (let count = start; count <= end; count += 10) {
         if (count === 0 || count >= MIN_UNIT_COUNT) values.push(count);
       }
-      refineTotal += values.length;
+      refineTotal += values.length * 2;
       return values;
     });
 
     for (let index = 0; index < searchRows.length; index += 1) {
       for (const count of refineRanges[index]) {
-        checked += 1;
-        const counts = distributeCounts(searchRows, budgets, index, count);
-        const candidate = evaluate(counts, searchRows, enemies, siegeRow);
-        if (betterCandidate(candidate, best)) {
-          best = candidate;
-          bestCounts = best.counts.slice();
-        }
-        if (checked % 20 === 0) {
-          if (onProgress) {
-            onProgress({
-              percent: Math.min(100, 80 + ((checked - coarseTotal) / refineTotal) * 20),
-              bestLoss: best && best.feasible ? best.maxLoss : null
-            });
+        for (const fillOptional of [true, false]) {
+          checked += 1;
+          const counts = distributeCounts(searchRows, budgets, index, count, fillOptional);
+          const candidate = evaluate(counts, searchRows, enemies, siegeRow);
+          if (betterCandidate(candidate, best)) {
+            best = candidate;
+            bestCounts = best.counts.slice();
           }
-          await new Promise((resolve) => setTimeout(resolve, SEARCH_STEP_DELAY_MS));
-          if (isCancelled && isCancelled()) return null;
+          if (checked % 20 === 0) {
+            if (onProgress) {
+              onProgress({
+                percent: Math.min(100, 80 + ((checked - coarseTotal) / refineTotal) * 20),
+                bestLoss: best && best.feasible ? best.losses : null
+              });
+            }
+            await new Promise((resolve) => setTimeout(resolve, SEARCH_STEP_DELAY_MS));
+            if (isCancelled && isCancelled()) return null;
+          }
         }
       }
     }
 
     if (!best) return failPlan(settings, limits, siegeRow ? [siegeRow] : [], 'search');
+
+    if (best.feasible) {
+      const originalCounts = best.counts.slice();
+      const minimalCounts = trimLeadershipCounts(searchRows, best.counts, enemies, siegeRow);
+      const reservedCounts = reserveLeadershipCounts(
+        searchRows, minimalCounts, originalCounts, enemies, siegeRow
+      );
+      const bufferedCounts = addLeadershipBuffer(searchRows, reservedCounts, budgets);
+      let chosen = evaluate(bufferedCounts, searchRows, enemies, siegeRow);
+      if (chosen.feasible) {
+        best.counts = bufferedCounts;
+      } else {
+        chosen = evaluate(reservedCounts, searchRows, enemies, siegeRow);
+        best.counts = reservedCounts;
+        if (!chosen.feasible) {
+          chosen = evaluate(minimalCounts, searchRows, enemies, siegeRow);
+          best.counts = minimalCounts;
+        }
+      }
+      best.feasible = chosen.feasible;
+      best.losses = chosen.losses;
+      best.damageDealt = chosen.damageDealt;
+      best.efficiency = chosen.efficiency;
+      best.rounds = chosen.rounds;
+    }
+
     if (onProgress) {
       onProgress({
         percent: 100,
-        bestLoss: best.feasible ? best.maxLoss : null
+        bestLoss: best.feasible ? best.losses : null
       });
     }
     await new Promise((resolve) => setTimeout(resolve, SEARCH_STEP_DELAY_MS));
@@ -658,20 +852,24 @@ const strangeMode = (() => {
       totalKills: finalRows.reduce((sum, row) => sum + row.kills, 0),
       totalDamage: finalRows.reduce((sum, row) => sum + row.totalDamage, 0),
       victory: best.feasible && fortOk,
-      rounds: Math.max(best.oursFirst.rounds, best.enemyFirst.rounds),
-      losses: best.maxLoss,
-      lossesOursFirst: best.oursFirst.losses,
-      lossesEnemyFirst: best.enemyFirst.losses,
+      rounds: enemyFirstLog.rounds,
+      losses: enemyFirstLog.losses,
+      lossesOursFirst: oursFirstLog.losses,
+      lossesEnemyFirst: enemyFirstLog.losses,
+      damageDealt: enemyFirstLog.damageDealt,
+      damagePerSilver: damagePerSilver(enemyFirstLog.damageDealt, enemyFirstLog.losses),
       logs: {
         oursFirst: {
           victory: oursFirstLog.victory,
           losses: oursFirstLog.losses,
+          damageDealt: oursFirstLog.damageDealt,
           rounds: oursFirstLog.rounds,
           entries: oursFirstLog.logs
         },
         enemyFirst: {
           victory: enemyFirstLog.victory,
           losses: enemyFirstLog.losses,
+          damageDealt: enemyFirstLog.damageDealt,
           rounds: enemyFirstLog.rounds,
           entries: enemyFirstLog.logs
         }

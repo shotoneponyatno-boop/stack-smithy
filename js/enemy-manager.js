@@ -17,11 +17,15 @@ const enemyManager = (() => {
     dragons: 'type.dragon',
     giants: 'type.giant',
     elementals: 'type.elemental',
+    elves: 'type.elves',
+    runic: 'type.runic',
     fortifications: 'enemy.fortifications',
     epicMonsters: 'enemy.epicMonsters'
   };
   const typeIds = Object.keys(typeLabels);
+  const manualTypeIds = typeIds.filter((id) => id !== 'runic');
   const form = document.getElementById('enemyForm');
+  const formDetails = document.getElementById('enemyFormDetails');
   const typesEl = document.getElementById('enemyTypes');
   const typeFieldset = document.getElementById('enemyTypesFieldset');
   const bonusFields = document.getElementById('enemyBonusFields');
@@ -40,6 +44,8 @@ const enemyManager = (() => {
   if (!form || !typesEl || !typeFieldset || !bonusFields || !bonusDetails || !nameInput ||
       !healthInput || !quantityInput || !strengthInput || !errorEl || !submit || !cancel ||
       !list || !empty || !count) return null;
+
+  if (formDetails) formDetails.open = false;
 
   const escape = I18N.escapeHtml;
   const selected = new Set();
@@ -118,12 +124,12 @@ const enemyManager = (() => {
   }
 
   function buildFields() {
-    typesEl.innerHTML = typeIds.map((id) => `
+    typesEl.innerHTML = manualTypeIds.map((id) => `
       <button type="button" class="enemy-type" data-enemy-type="${id}" aria-pressed="false">
         <span data-i18n="${typeLabels[id]}">${escape(label(id))}</span>
       </button>
     `).join('');
-    bonusFields.innerHTML = typeIds.map((id) => `
+    bonusFields.innerHTML = manualTypeIds.map((id) => `
       <label class="enemy-field" for="enemy-bonus-${id}">
         <span data-i18n="${typeLabels[id]}">${escape(label(id))}</span>
         <span class="enemy-bonus-input">
@@ -201,6 +207,7 @@ const enemyManager = (() => {
 
   function edit(enemy) {
     resetForm();
+    if (formDetails) formDetails.open = true;
     editingId = enemy.id;
     nameInput.value = enemy.name;
     healthInput.value = String(enemy.health);
@@ -310,7 +317,49 @@ const enemyManager = (() => {
   renderList();
   document.addEventListener('DOMContentLoaded', renderList);
 
+  function clearEnemies() {
+    enemies = [];
+    nextId = 1;
+    save();
+    renderList();
+  }
+
+  function addEnemies(items) {
+    const added = [];
+    items.forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const health = Number(item.health);
+      if (!Number.isFinite(health) || health <= 0) return;
+      const types = [...new Set((item.types || []).filter((id) => typeIds.includes(id)))];
+      if (!types.length) return;
+      const quantity = Number(item.quantity);
+      const strength = Number(item.strength);
+      const strengthAgainst = {};
+      typeIds.forEach((id) => {
+        const value = Number(item.strengthAgainst && item.strengthAgainst[id]);
+        if (Number.isFinite(value)) strengthAgainst[id] = value;
+      });
+      enemies.push({
+        id: nextId++,
+        name: String(item.name || '').trim().slice(0, 120),
+        health,
+        quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null,
+        strength: Number.isFinite(strength) && strength >= 0 ? strength : null,
+        types,
+        strengthAgainst
+      });
+      added.push(item);
+    });
+    if (added.length) {
+      save();
+      renderList();
+    }
+    return added.length;
+  }
+
   return {
+    addEnemies,
+    clearEnemies,
     getEnemies() {
       return enemies.map((enemy) => ({
         ...enemy,

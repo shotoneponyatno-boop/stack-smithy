@@ -188,43 +188,90 @@
                     </h2>
                     <span class="troop-card-count" id="enemyCount"></span>
                 </div>
-                <form class="enemy-form" id="enemyForm" novalidate>
-                    <div class="enemy-fields">
-                        <label class="enemy-field">
-                            <span data-i18n="enemy.name">Name (optional)</span>
-                            <input id="enemyName" type="text" maxlength="120" data-i18n-attr="placeholder:enemy.autoName" placeholder="Enemy number">
-                        </label>
-                        <label class="enemy-field">
-                            <span data-i18n="enemy.strength">Strength (optional)</span>
-                            <input id="enemyStrength" type="text" inputmode="decimal" autocomplete="off">
-                        </label>
-                        <label class="enemy-field">
-                            <span data-i18n="enemy.quantity">Quantity (optional)</span>
-                            <input id="enemyQuantity" type="text" inputmode="numeric" placeholder="∞" autocomplete="off" aria-describedby="enemyQuantityHelp">
-                            <span class="enemy-field-hint" id="enemyQuantityHelp" data-i18n="enemy.unlimitedHint">Leave empty for unlimited quantity.</span>
-                        </label>
-                        <label class="enemy-field">
-                            <span data-i18n="enemy.health">Health *</span>
-                            <input id="enemyHealth" type="text" inputmode="decimal" required autocomplete="off">
-                        </label>
-                    </div>
-                    <fieldset class="enemy-types-fieldset" id="enemyTypesFieldset" aria-describedby="enemyTypesHint">
-                        <legend data-i18n="enemy.types">Types *</legend>
-                        <p class="enemy-field-hint" id="enemyTypesHint" data-i18n="enemy.typesHint">Select one or more types; click again to remove.</p>
-                        <div class="enemy-types" id="enemyTypes"></div>
-                    </fieldset>
-                    <details class="enemy-bonuses" id="enemyBonuses">
-                        <summary data-i18n="enemy.bonuses">Strength bonuses against types (optional)</summary>
-                        <div class="enemy-bonus-grid" id="enemyBonusFields"></div>
-                    </details>
-                    <p class="enemy-error" id="enemyError" role="alert" hidden></p>
-                    <div class="enemy-form-actions">
-                        <button type="submit" class="enemy-button enemy-button-primary" id="enemySubmit" data-i18n="enemy.add">Add enemy</button>
-                        <button type="button" class="enemy-button" id="enemyCancel" data-i18n="enemy.cancel" hidden>Cancel editing</button>
-                    </div>
-                </form>
+                <details class="enemy-form-details" id="enemyFormDetails">
+                    <summary class="enemy-form-summary">
+                        <span class="enemy-form-summary-title">
+                            <span class="enemy-form-summary-icon material-symbols-outlined" aria-hidden="true">add_circle</span>
+                            <span data-i18n="enemy.customForm">Add custom enemy</span>
+                        </span>
+                        <span class="enemy-form-caret material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
+                    </summary>
+                    <form class="enemy-form" id="enemyForm" novalidate>
+                        <div class="enemy-fields">
+                            <label class="enemy-field">
+                                <span data-i18n="enemy.name">Name (optional)</span>
+                                <input id="enemyName" type="text" maxlength="120" data-i18n-attr="placeholder:enemy.autoName" placeholder="Enemy number">
+                            </label>
+                            <label class="enemy-field">
+                                <span data-i18n="enemy.strength">Strength (optional)</span>
+                                <input id="enemyStrength" type="text" inputmode="decimal" autocomplete="off">
+                            </label>
+                            <label class="enemy-field">
+                                <span data-i18n="enemy.quantity">Quantity (optional)</span>
+                                <input id="enemyQuantity" type="text" inputmode="numeric" placeholder="∞" autocomplete="off" aria-describedby="enemyQuantityHelp">
+                                <span class="enemy-field-hint" id="enemyQuantityHelp" data-i18n="enemy.unlimitedHint">Leave empty for unlimited quantity.</span>
+                            </label>
+                            <label class="enemy-field">
+                                <span data-i18n="enemy.health">Health *</span>
+                                <input id="enemyHealth" type="text" inputmode="decimal" required autocomplete="off">
+                            </label>
+                        </div>
+                        <fieldset class="enemy-types-fieldset" id="enemyTypesFieldset" aria-describedby="enemyTypesHint">
+                            <legend data-i18n="enemy.types">Types *</legend>
+                            <p class="enemy-field-hint" id="enemyTypesHint" data-i18n="enemy.typesHint">Select one or more types; click again to remove.</p>
+                            <div class="enemy-types" id="enemyTypes"></div>
+                        </fieldset>
+                        <details class="enemy-bonuses" id="enemyBonuses">
+                            <summary data-i18n="enemy.bonuses">Strength bonuses against types (optional)</summary>
+                            <div class="enemy-bonus-grid" id="enemyBonusFields"></div>
+                        </details>
+                        <p class="enemy-error" id="enemyError" role="alert" hidden></p>
+                        <div class="enemy-form-actions">
+                            <button type="submit" class="enemy-button enemy-button-primary" id="enemySubmit" data-i18n="enemy.add">Add enemy</button>
+                            <button type="button" class="enemy-button" id="enemyCancel" data-i18n="enemy.cancel" hidden>Cancel editing</button>
+                        </div>
+                    </form>
+                </details>
+                <div class="monster-categories" id="monsterCategories" role="group"
+                     data-i18n-attr="aria-label:monster.categories" aria-label="Monster categories">
+                    <button type="button" class="monster-category" data-monster-category="event"
+                            aria-haspopup="dialog" aria-controls="monsterPicker">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                        <span data-i18n="monster.event">Event</span>
+                    </button>
+                    <button type="button" class="monster-category" data-monster-category="rare"
+                            aria-haspopup="dialog" aria-controls="monsterPicker">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">diamond</span>
+                        <span data-i18n="monster.rare">Rare</span>
+                    </button>
+                    <button type="button" class="monster-category" data-monster-category="common"
+                            aria-haspopup="dialog" aria-controls="monsterPicker">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">groups</span>
+                        <span data-i18n="monster.common">Common</span>
+                    </button>
+                    <button type="button" class="monster-category" data-monster-category="citadel"
+                            aria-haspopup="dialog" aria-controls="monsterPicker">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">castle</span>
+                        <span data-i18n="monster.citadel">Citadels</span>
+                    </button>
+                    <button type="button" class="monster-category" data-monster-category="runic"
+                            aria-haspopup="dialog" aria-controls="monsterPicker">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">auto_fix_high</span>
+                        <span data-i18n="monster.runic">Runic</span>
+                    </button>
+                    <button type="button" class="monster-category is-locked" data-monster-category="heroic"
+                            aria-disabled="true" aria-haspopup="dialog" aria-controls="monsterPicker"
+                            data-i18n-attr="title:monster.locked,aria-label:monster.locked"
+                            title="Available in a future update.">
+                        <span class="monster-category-icon material-symbols-outlined" aria-hidden="true">workspace_premium</span>
+                        <span data-i18n="monster.heroic">Heroic</span>
+                        <span class="monster-category-lock material-symbols-outlined" aria-hidden="true">lock</span>
+                    </button>
+                </div>
+                <p class="monster-categories-error" id="monsterCategoriesError"
+                   data-i18n="monster.loadError" hidden>Failed to load monster data.</p>
                 <div class="enemy-list-wrap">
-                    <h3 class="enemy-list-title" data-i18n="enemy.list">Added enemies</h3>
+                    <h3 class="enemy-list-title" data-i18n="enemy.list">Enemy list</h3>
                     <p class="enemy-empty" id="enemyEmpty" data-i18n="enemy.empty">No enemies added yet.</p>
                     <ul class="enemy-list" id="enemyList"></ul>
                 </div>
@@ -271,6 +318,7 @@
                                 <label class="calculation-mode-option">
                                     <input type="radio" name="calculationMode" value="doctorStrange">
                                     <span data-i18n="settings.doctorStrange">Doctor Strange</span>
+                                    <span class="calculation-mode-beta" data-i18n="settings.beta">BETA</span>
                                 </label>
                                 <label class="calculation-mode-option is-locked">
                                     <input type="radio" name="calculationMode" value="damagePerSilver">
@@ -293,6 +341,7 @@
                     <span class="final-calculations-mode" role="group" aria-labelledby="finalCalculationsModeLabel finalCalculationsMode">
                         <span class="final-calculations-mode-label" id="finalCalculationsModeLabel" data-i18n="calc.mode">Mode</span>
                         <span class="final-calculations-mode-value" id="finalCalculationsMode" data-i18n="settings.maxDamage">Maximum damage</span>
+                        <span class="calculation-mode-beta" id="finalCalculationsBeta" data-i18n="settings.beta" hidden>BETA</span>
                     </span>
                 </div>
                 <p class="troop-card-subtitle" data-i18n="calc.subtitle">Capacity usage based on the current selection and calculation mode.</p>
@@ -354,6 +403,7 @@
                             </label>
                         </div>
                     </div>
+                    <div class="final-search-sentinel" id="finalSearchSentinel" aria-hidden="true"></div>
                     <div class="final-search-progress" id="finalSearchProgress" hidden>
                         <div class="final-search-progress-head">
                             <span data-i18n="calc.searching">Searching for the best stack…</span>
@@ -464,6 +514,29 @@
 <div class="merc-popover" id="mercPopover" role="dialog" aria-modal="false"
      data-i18n-attr="aria-label:pop.mercAria" aria-label="Select mercenaries" hidden></div>
 
+<div class="monster-picker-backdrop" id="monsterPickerBackdrop" hidden></div>
+<div class="monster-picker" id="monsterPicker" role="dialog" aria-modal="true"
+     aria-labelledby="monsterPickerTitle" hidden>
+    <div class="monster-picker-header">
+        <h3 id="monsterPickerTitle" data-i18n="monster.selectTitle">Select a monster</h3>
+        <button type="button" class="monster-picker-close" id="monsterPickerClose"
+                data-i18n-attr="title:pop.closeAria,aria-label:pop.closeAria"
+                title="Close window" aria-label="Close window">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+    </div>
+    <div class="monster-picker-body">
+        <div class="monster-picker-search">
+            <span class="material-symbols-outlined" aria-hidden="true">search</span>
+            <input id="monsterPickerSearch" type="search" autocomplete="off"
+                   data-i18n-attr="placeholder:monster.search" placeholder="Search by name">
+        </div>
+        <p class="monster-picker-empty" id="monsterPickerEmpty" data-i18n="monster.empty" hidden>No monsters found.</p>
+        <p class="monster-picker-error" id="monsterPickerError" data-i18n="monster.loadError" hidden>Failed to load monster data.</p>
+        <div class="monster-picker-list" id="monsterPickerList" role="list"></div>
+    </div>
+</div>
+
 <script src="js/data.js" defer></script>
 <script src="js/i18n.js" defer></script>
 <script src="js/lang-picker.js" defer></script>
@@ -472,6 +545,9 @@
 <script src="js/mercenary-picker.js" defer></script>
 <script src="js/battle-report.js" defer></script>
 <script src="js/enemy-manager.js" defer></script>
+<script src="data/monsters.js" defer></script>
+<script src="data/monster-troops.js" defer></script>
+<script src="js/monster-picker.js" defer></script>
 <script src="js/calculation-settings.js" defer></script>
 <script src="js/strange-mode.js" defer></script>
 <script src="js/calculations.js" defer></script>
