@@ -19,6 +19,20 @@ window.MONSTER_CATEGORIES_DATA = {
         { troop: "Death Chariot", quantity: -1, level: 6 },
         { troop: "Demon", quantity: -1, level: 3 }
       ]
+    },
+    {
+      name: "Arachne's Swarm",
+      level: 50,
+      troops: [
+        { troop: "Malicious Mantis", quantity: -1, level: 2 },
+        { troop: "Caterpillar Cavalry", quantity: -1, level: 2 },
+        { troop: "Elusive Wasp", quantity: -1, level: 2 },
+        { troop: "Merciless Arachne", quantity: -1, level: 3 },
+        { troop: "Malicious Mantis", quantity: -1, level: 2 },
+        { troop: "Caterpillar Cavalry", quantity: -1, level: 2 },
+        { troop: "Elusive Wasp", quantity: -1, level: 2 },
+        { troop: "Merciless Arachne", quantity: -1, level: 3 }
+      ]
     }
   ],
   rare: [],

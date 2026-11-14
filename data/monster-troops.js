@@ -267,5 +267,45 @@ window.MONSTER_TROOPS_DATA = [
     health: 1200,
     strengthAgainst: {},
     tags: ["runic"]
+  },
+  {
+    name: "Malicious Mantis",
+    tier: 2,
+    strength: 11000,
+    health: 33000,
+    strengthAgainst: {
+      mounted: 50
+    },
+    tags: ["melee", "swarm", "epicMonsters"]
+  },
+  {
+    name: "Caterpillar Cavalry",
+    tier: 2,
+    strength: 11000,
+    health: 33000,
+    strengthAgainst: {
+      ranged: 50
+    },
+    tags: ["mounted", "swarm", "epicMonsters"]
+  },
+  {
+    name: "Elusive Wasp",
+    tier: 2,
+    strength: 11000,
+    health: 33000,
+    strengthAgainst: {
+      melee: 50
+    },
+    tags: ["flying", "swarm", "epicMonsters"]
+  },
+  {
+    name: "Merciless Arachne",
+    tier: 3,
+    strength: 50000,
+    health: 150000,
+    strengthAgainst: {
+      flying: 50
+    },
+    tags: ["ranged", "swarm", "epicMonsters"]
   }
 ];
