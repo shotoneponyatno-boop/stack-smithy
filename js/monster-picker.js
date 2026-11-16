@@ -10,6 +10,7 @@ const monsterPicker = (() => {
     common: 'monster.common',
     citadel: 'monster.citadel',
     runic: 'monster.runic',
+    ancients: 'monster.ancients',
     heroic: 'monster.heroic'
   };
   const categoryIcons = {
@@ -18,6 +19,7 @@ const monsterPicker = (() => {
     common: 'groups',
     citadel: 'castle',
     runic: 'auto_fix_high',
+    ancients: 'account_balance',
     heroic: 'workspace_premium'
   };
   const typeAliases = {
@@ -86,6 +88,19 @@ const monsterPicker = (() => {
       if (Number.isFinite(number)) result[normalized] = number;
     });
     return result;
+  }
+
+  function mergedTags(item, troop) {
+    const base = troop && Array.isArray(troop.tags) ? troop.tags : [];
+    const extra = item && Array.isArray(item.tags) ? item.tags : [];
+    return normalizeTags([...base, ...extra]);
+  }
+
+  function mergedStrengthAgainst(item, troop) {
+    return {
+      ...normalizeStrengthAgainst(troop && troop.strengthAgainst),
+      ...normalizeStrengthAgainst(item && item.strengthAgainst)
+    };
   }
 
   function normalizeTroops(data) {
@@ -176,14 +191,14 @@ const monsterPicker = (() => {
     return Boolean(troop &&
       Number.isFinite(Number(troop.health)) && Number(troop.health) > 0 &&
       Number.isFinite(Number(troop.strength)) &&
-      Number.isFinite(Number(troop.tier)) &&
-      Array.isArray(troop.tags) && troop.tags.length > 0);
+      Number.isFinite(Number(troop.tier)));
   }
 
   function monsterTroopComplete(item) {
     if (!item) return false;
     const troop = troops[item.troop];
     if (!isCompleteTroop(troop)) return false;
+    if (!mergedTags(item, troop).length) return false;
     const level = Number(item.level);
     const tier = Number(troop.tier);
     if (!Number.isFinite(level) || !Number.isFinite(tier)) return true;
@@ -362,8 +377,8 @@ const monsterPicker = (() => {
         health: troop.health,
         quantity: item.quantity,
         strength: troop.strength,
-        types: normalizeTags(troop.tags),
-        strengthAgainst: normalizeStrengthAgainst(troop.strengthAgainst)
+        types: mergedTags(item, troop),
+        strengthAgainst: mergedStrengthAgainst(item, troop)
       };
     }).filter(Boolean);
     if (items.length && enemyManager) {

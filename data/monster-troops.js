@@ -174,10 +174,6 @@ window.MONSTER_TROOPS_DATA = [
     tier: 6,
     strength: 110000,
     health: 330000,
-    strengthAgainst: {
-      dragons: 50,
-      ranged: 65
-    },
     tags: ["melee", "elemental", "cursed"]
   },
   {
@@ -185,80 +181,56 @@ window.MONSTER_TROOPS_DATA = [
     tier: 3,
     strength: 6500,
     health: 19500,
-    strengthAgainst: {
-      flying: 70
-    },
-    tags: ["ranged", "demon", "epicMonsters"]
+    tags: ["ranged", "demon"]
   },
   {
     name: "Ifrit",
     tier: 5,
     strength: 44000,
     health: 132000,
-    strengthAgainst: {
-      melee: 70
-    },
-    tags: ["flying", "demon", "epicMonsters"]
+    tags: ["flying", "demon"]
   },
   {
     name: "Fireworm Rider",
     tier: 5,
     strength: 50000,
     health: 150000,
-    strengthAgainst: {
-      ranged: 55
-    },
-    tags: ["mounted", "demon", "epicMonsters"]
+    tags: ["mounted", "demon"]
   },
   {
     name: "Fire Hydra",
     tier: 3,
     strength: 100000,
     health: 300000,
-    strengthAgainst: {
-      mounted: 75
-    },
-    tags: ["melee", "demon", "epicMonsters"]
+    tags: ["melee", "demon"]
   },
   {
     name: "Necromanser",
     tier: 2,
     strength: 720,
     health: 2160,
-    strengthAgainst: {
-      flying: 50
-    },
-    tags: ["ranged", "undead", "epicMonsters"]
+    tags: ["ranged", "undead"]
   },
   {
     name: "Bone Golem",
     tier: 6,
     strength: 70000,
     health: 210000,
-    strengthAgainst: {
-      mounted: 45
-    },
-    tags: ["melee", "undead", "epicMonsters"]
+    tags: ["melee", "undead"]
   },
   {
     name: "Death Chariot",
     tier: 6,
     strength: 57000,
     health: 171000,
-    strengthAgainst: {
-      ranged: 60
-    },
-    tags: ["mounted", "undead", "epicMonsters"]
+    tags: ["mounted", "undead"]
   },
   {
     name: "Demon",
     tier: 3,
     strength: 100000,
     health: 300000,
-    strengthAgainst: {
-      melee: 80
-    },
-    tags: ["flying", "undead", "epicMonsters"]
+    tags: ["flying", "undead"]
   },
   {
     name: "Runic Guardian",
@@ -273,39 +245,160 @@ window.MONSTER_TROOPS_DATA = [
     tier: 2,
     strength: 11000,
     health: 33000,
-    strengthAgainst: {
-      mounted: 50
-    },
-    tags: ["melee", "swarm", "epicMonsters"]
+    tags: ["melee", "swarm"]
   },
   {
     name: "Caterpillar Cavalry",
     tier: 2,
     strength: 11000,
     health: 33000,
-    strengthAgainst: {
-      ranged: 50
-    },
-    tags: ["mounted", "swarm", "epicMonsters"]
+    tags: ["mounted", "swarm"]
   },
   {
     name: "Elusive Wasp",
     tier: 2,
     strength: 11000,
     health: 33000,
-    strengthAgainst: {
-      melee: 50
-    },
-    tags: ["flying", "swarm", "epicMonsters"]
+    tags: ["flying", "swarm"]
   },
   {
     name: "Merciless Arachne",
     tier: 3,
     strength: 50000,
     health: 150000,
-    strengthAgainst: {
-      flying: 50
-    },
-    tags: ["ranged", "swarm", "epicMonsters"]
+    tags: ["ranged", "swarm"]
+  },
+  {
+    name: "Headsman",
+    tier: 3,
+    strength: 2300,
+    health: 6900,
+    tags: ["melee", "undead"]
+  },
+  {
+    name: "Dark Rider",
+    tier: 4,
+    strength: 5800,
+    health: 17400,
+    tags: ["mounted", "undead"]
+  },
+  {
+    name: "Deathhound Rider",
+    tier: 2,
+    strength: 1100,
+    health: 3300,
+    tags: ["mounted", "undead"]
+  },
+  {
+    name: "Banshee",
+    tier: 1,
+    strength: 100,
+    health: 300,
+    tags: ["ranged", "undead"]
+  },
+  {
+    name: "Ghoul",
+    tier: 0,
+    strength: 28,
+    health: 84,
+    tags: ["melee", "beast", "undead"]
+  },
+  {
+    name: "Skeleton",
+    tier: 0,
+    strength: 56,
+    health: 168,
+    tags: ["melee", "cursed"]
+  },
+  {
+    name: "Goblin",
+    tier: 0,
+    strength: 28,
+    health: 84,
+    tags: ["melee", "barbarian"]
+  },
+  {
+    name: "Fiend",
+    tier: 0,
+    strength: 28,
+    health: 84,
+    tags: ["melee", "demon"]
+  },
+  {
+    name: "Witch Doctor",
+    tier: 1,
+    strength: 150,
+    health: 450,
+    tags: ["ranged", "cursed"]
+  },
+  {
+    name: "Wolf Rider",
+    tier: 1,
+    strength: 150,
+    health: 450,
+    tags: ["mounted", "barbarian"]
+  },
+  {
+    name: "Magog",
+    tier: 1,
+    strength: 50,
+    health: 150,
+    tags: ["ranged", "demon"]
+  },
+  {
+    name: "Jaguar Rider",
+    tier: 2,
+    strength: 270,
+    health: 810,
+    tags: ["mounted", "cursed"]
+  },
+  {
+    name: "Axe Thrower",
+    tier: 2,
+    strength: 360,
+    health: 1080,
+    tags: ["ranged", "barbarian"]
+  },
+  {
+    name: "Horned Demon",
+    tier: 2,
+    strength: 720,
+    health: 2160,
+    tags: ["melee", "demon"]
+  },
+  {
+    name: "Firehorse Rider",
+    tier: 3,
+    strength: 4100,
+    health: 12300,
+    tags: ["mounted", "demon"]
+  },
+  {
+    name: "Mechanical Griffin",
+    tier: 2,
+    strength: 70000,
+    health: 210000,
+    tags: ["flying", "ancient"]
+  },
+  {
+    name: "Ancient Arbalester",
+    tier: 2,
+    strength: 720,
+    health: 2160,
+    tags: ["ranged", "ancient"]
+  },
+  {
+    name: "Golden Guardian",
+    tier: 3,
+    strength: 100000,
+    health: 300000,
+    tags: ["melee", "ancient"]
+  },
+  {
+    name: "Tiger Rider",
+    tier: 2,
+    strength: 57000,
+    health: 171000,
+    tags: ["mounted", "ancient"]
   }
 ];
