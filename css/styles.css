@@ -2713,6 +2713,40 @@ html {
     font-size: 0.75rem;
 }
 
+.final-search-stacks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    max-height: 76px;
+    overflow: auto;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.final-search-stack {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.final-search-stack strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.final-search-stack.is-empty {
+    opacity: 0.45;
+}
+
+.final-search-stacks[hidden] {
+    display: none;
+}
+
 .final-result-tools {
     display: flex;
     align-items: center;

@@ -17,6 +17,7 @@ const finalCalculations = (() => {
   const searchBarEl = document.getElementById('finalSearchBar');
   const searchPercentEl = document.getElementById('finalSearchPercent');
   const searchBestEl = document.getElementById('finalSearchBest');
+  const searchStacksEl = document.getElementById('finalSearchStacks');
   const searchSentinel = document.getElementById('finalSearchSentinel');
   const battleLogEl = document.getElementById('finalBattleLog');
   const battleOursRows = document.getElementById('finalBattleOursRows');
@@ -28,7 +29,7 @@ const finalCalculations = (() => {
   if (!section || !modeEl || !rowsEl || !emptyEl || !tableWrap || !summaryEl ||
       !inlineEl || !inlineWrap || !inlineLayoutToggle || !minimalToggle ||
       !enemyOrderEl || !enemyOrderRowsEl || !searchProgressEl || !searchBarEl ||
-      !searchPercentEl || !searchBestEl || !battleLogEl || !battleOursRows ||
+      !searchPercentEl || !searchBestEl || !searchStacksEl || !battleLogEl || !battleOursRows ||
       !battleEnemyRows || !battleOursMeta || !battleEnemyMeta || !betaEl ||
       !searchSentinel) return null;
 
@@ -181,6 +182,9 @@ const finalCalculations = (() => {
     searchBarEl.style.width = '0%';
     searchPercentEl.textContent = '0%';
     searchBestEl.textContent = '';
+    searchBestEl.hidden = true;
+    searchStacksEl.innerHTML = '';
+    searchStacksEl.hidden = true;
     updateSearchFloating();
   }
 
@@ -206,9 +210,25 @@ const finalCalculations = (() => {
     const percent = Math.max(0, Math.min(100, Number(progress && progress.percent) || 0));
     searchBarEl.style.width = `${percent}%`;
     searchPercentEl.textContent = `${Math.round(percent)}%`;
-    searchBestEl.textContent = progress && Number.isFinite(progress.bestLoss)
-      ? I18N.t('calc.searchBest', { value: formatInt(progress.bestLoss) })
-      : '';
+    searchBestEl.textContent = '';
+    searchBestEl.hidden = true;
+
+    const stacks = progress && Array.isArray(progress.stacks) ? progress.stacks : [];
+    if (stacks.length) {
+      searchStacksEl.innerHTML = stacks.map((item) => {
+        const count = Math.max(0, Number(item && item.count) || 0);
+        return `
+          <span class="final-search-stack${count > 0 ? '' : ' is-empty'}">
+            <span class="final-search-stack-name">${escape(item && item.name)}</span>
+            <strong>${escape(formatInt(count))}</strong>
+          </span>
+        `;
+      }).join('');
+      searchStacksEl.hidden = false;
+    } else {
+      searchStacksEl.innerHTML = '';
+      searchStacksEl.hidden = true;
+    }
   }
 
   function toRoman(value) {
@@ -593,7 +613,10 @@ const finalCalculations = (() => {
         (progress) => {
           if (token === renderToken) updateSearchProgress(progress);
         },
-        () => token !== renderToken
+        () => token !== renderToken,
+        (preview) => {
+          if (token === renderToken) renderResult(preview);
+        }
       );
     }
 
@@ -713,7 +736,9 @@ const finalCalculations = (() => {
       battleOursRows.innerHTML = '';
       battleEnemyRows.innerHTML = '';
       battleOursMeta.textContent = '';
+      battleOursMeta.hidden = true;
       battleEnemyMeta.textContent = '';
+      battleEnemyMeta.hidden = true;
       return;
     }
 
@@ -727,15 +752,8 @@ const finalCalculations = (() => {
           <td>${escape(formatInt(entry.remaining))}</td>
         </tr>
       `).join('');
-      meta.textContent = scenario.victory
-        ? I18N.t('calc.victorySummary', {
-          rounds: formatInt(scenario.rounds),
-          value: formatInt(scenario.losses),
-          efficiency: formatRatio(scenario.damageDealt, scenario.losses)
-        })
-        : I18N.t('calc.noVictorySummary', {
-          efficiency: formatRatio(scenario.damageDealt, scenario.losses)
-        });
+      meta.textContent = '';
+      meta.hidden = true;
     };
 
     battleLogEl.hidden = false;
@@ -774,16 +792,9 @@ const finalCalculations = (() => {
     hasEnemyOrder = Boolean(victoryMode && plan.enemyOrder && plan.enemyOrder.length);
 
     if (victoryMode) {
-      summaryEl.textContent = plan.victory
-        ? I18N.t('calc.victorySummary', {
-          rounds: formatInt(plan.rounds),
-          value: formatInt(plan.losses),
-          efficiency: formatRatio(plan.damageDealt, plan.losses)
-        })
-        : I18N.t('calc.noVictorySummary', {
-          efficiency: formatRatio(plan.damageDealt, plan.losses)
-        });
-      summaryEl.classList.toggle('is-warning', !plan.victory);
+      summaryEl.textContent = '';
+      summaryEl.hidden = true;
+      summaryEl.classList.remove('is-warning');
     } else {
       summaryEl.textContent = I18N.t('calc.resultSummary', {
         kills: formatInt(plan.totalKills),
