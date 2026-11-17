@@ -400,5 +400,33 @@ window.MONSTER_TROOPS_DATA = [
     strength: 57000,
     health: 171000,
     tags: ["mounted", "ancient"]
+  },
+  {
+    name: "Shadow Warrior",
+    tier: 3,
+    strength: 9920,
+    health: 29760,
+    tags: ["melee", "guardsmen", "shadow"]
+  },
+  {
+    name: "Shadow Ranger",
+    tier: 3,
+    strength: 9920,
+    health: 29760,
+    tags: ["ranged", "guardsmen", "shadow"]
+  },
+  {
+    name: "Shadow Rider",
+    tier: 3,
+    strength: 19840,
+    health: 59520,
+    tags: ["mounted", "guardsmen", "shadow"]
+  },
+  {
+    name: "Shadow Corax",
+    tier: 3,
+    strength: 99200,
+    health: 297600,
+    tags: ["flying", "guardsmen", "shadow"]
   }
 ];

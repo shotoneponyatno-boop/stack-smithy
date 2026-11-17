@@ -43,6 +43,16 @@ window.MONSTER_CATEGORIES_DATA = {
         { troop: "Golden Guardian", quantity: -1, level: 3, strengthAgainst: { mounted: 45 }, tags: ["epicMonsters"] },
         { troop: "Tiger Rider", quantity: -1, level: 2, strengthAgainst: { ranged: 60 }, tags: ["epicMonsters"] }
       ]
+    },
+    {
+      name: "Shadow City",
+      level: 50,
+      troops: [
+        { troop: "Shadow Warrior", quantity: -1, level: 3, strengthAgainst: { mounted: 50 }, tags: ["epicMonsters"] },
+        { troop: "Shadow Ranger", quantity: -1, level: 3, strengthAgainst: { flying: 50 }, tags: ["epicMonsters"] },
+        { troop: "Shadow Rider", quantity: -1, level: 3, strengthAgainst: { ranged: 50 }, tags: ["epicMonsters"] },
+        { troop: "Shadow Corax", quantity: -1, level: 3, strengthAgainst: { melee: 50 }, tags: ["epicMonsters"] }
+      ]
     }
   ],
   rare: [],
